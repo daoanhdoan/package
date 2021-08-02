@@ -1,0 +1,6 @@
+name: Code Package
+type: module
+core_version_requirement: ^9
+package: Code
+dependencies:
+  - drupal:authman_github

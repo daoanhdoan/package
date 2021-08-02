@@ -1,0 +1,4 @@
+package:
+  version: 1.0
+  js:
+    js/package.js: {}

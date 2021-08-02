@@ -1,0 +1,23 @@
+package.config:
+  path: /admin/config/services/package
+  defaults:
+    _title: Packages
+    _form: \Drupal\package\Form\PackageConfigForm
+  requirements:
+    _permission: 'administer site configuration'
+package.extensions:
+  path: /admin/config/services/package/extensions
+  defaults:
+    _title: Extensions
+    _form: \Drupal\package\Form\ExtensionConfigForm
+  requirements:
+    _permission: 'administer site configuration'
+packages.json:
+  path: '/packages.json'
+  defaults:
+  # Calls the list controller, defined in the annotation of the contact entity.
+    _controller: '\Drupal\package\Controller\PackageController::load'
+    _title: 'Packages'
+  requirements:
+    _permission: 'access content'
+

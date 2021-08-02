@@ -1,0 +1,11 @@
+# Define the menu links for this module
+package.config:
+  route_name: package.config
+  title: 'Packages'
+  description: 'Configure settings for package.'
+  parent: system.admin_config_services
+package.extensions:
+  route_name: package.extensions
+  title: 'Extensions'
+  description: 'Configure settings for extesions.'
+  parent: package.config

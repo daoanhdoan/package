@@ -1,0 +1,9 @@
+{
+  "name": "daoanhdoan/package",
+  "description": "Code Package",
+  "type": "drupal-custom-module",
+  "license":"GPL-2.0",
+  "extra": {
+    "installer-name": "package"
+  }
+}

@@ -1,0 +1,20 @@
+uuid: b5e403ac-4d1f-457d-872a-5b24f77a1aa8
+langcode: en
+status: true
+dependencies:
+  config:
+    - key.key.authman_github_access_token
+    - key.key.authman_github_client
+  module:
+    - authman_github
+id: github
+label: Github
+plugin: authman_github
+settings:
+  scopes:
+    - repo
+    - 'repo:status'
+    - repo_deployment
+grant_type: authorization_code
+client_key: authman_github_client
+access_token_key: authman_github_access_token
