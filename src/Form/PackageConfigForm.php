@@ -22,6 +22,7 @@ class PackageConfigForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $config = $this->config("package.settings");
     $storage = \Drupal::entityTypeManager()->getStorage('authman_auth');
     assert($storage instanceof AuthmanAuthStorage);
     $items = $storage->loadMultiple();
@@ -46,7 +47,7 @@ class PackageConfigForm extends ConfigFormBase {
       ];
     }
     else {
-      $ids = $this->config("package.settings")->get('instance_id');
+      $ids = $config->get('instance_id');
       $form['instance_id'] = [
         '#type' => 'select',
         '#title' => 'Github Authman Instance',
@@ -54,6 +55,12 @@ class PackageConfigForm extends ConfigFormBase {
         '#default_value' => $ids,
         '#required' => TRUE,
         '#multiple' => TRUE
+      ];
+      $form['vendor'] = [
+        '#type' => 'textfield',
+        '#title' => 'Vendor',
+        '#default_value' => $config->get('vendor'),
+        '#required' => TRUE,
       ];
       $form += parent::buildForm($form, $form_state);
       if (!empty($ids)) {
@@ -75,6 +82,7 @@ class PackageConfigForm extends ConfigFormBase {
     $authmanInstanceId = $form_state->getValue('instance_id');
     $config = $this->config('package.settings');
     $config->set('instance_id', $authmanInstanceId);
+    $config->set('vendor', $form_state->getValue('vendor'));
     $config->save();
     parent::submitForm($form, $form_state);
   }

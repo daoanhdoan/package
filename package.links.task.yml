@@ -1,0 +1,10 @@
+# All action links for this module
+package.package_settings_tab:
+  route_name: package.config
+  title: 'Settings'
+  base_route: package.config
+package.extensions:
+  route_name: package.extensions
+  base_route: package.config
+  title: 'Extensions'
+  weight: 990

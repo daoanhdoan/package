@@ -61,17 +61,25 @@ class ExtensionConfigForm extends ConfigFormBase {
       '#button_type' => 'primary',
       '#submit' => [[$this, "createRepository"]]
     ];
+    $form['actions']['delete_repository'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Delete Github Repository'),
+      '#button_type' => 'danger',
+      '#submit' => [[$this, "deleteRepository"]]
+    ];
     return $form;
   }
 
   public function createComposerFile(array &$form, FormStateInterface $formState) {
+    $config = \Drupal::config('package.settings');
+    $vendor = $config->get('vendor');
     $extensionList = \Drupal::service('extension.list.module')->getList();
     $extensions = $formState->getValue('extensions');
     foreach($extensions as $name => $extension) {
       if ($extension['select']) {
         $extension = $extensionList[$name];
         $desc = !empty($extension->info['description']) ? " - {$extension->info['description']}":"";
-        $json = "{\n  \"name\": \"daoanhdoan/{$extension->getName()}\",\n  \"description\": \"{$extension->info['name']}{$desc}\",\n \"type\": \"drupal-custom-module\",\n  \"license\":\"GPL-2.0\",\n  \"extra\": {\n    \"installer-name\": \"{$extension->getName()}\"\n  }\n}";
+        $json = "{\n  \"name\": \"{$vendor}/{$extension->getName()}\",\n  \"description\": \"{$extension->info['name']}{$desc}\",\n \"type\": \"drupal-custom-module\",\n  \"license\":\"GPL-2.0\",\n  \"extra\": {\n    \"installer-name\": \"{$extension->getName()}\"\n  }\n}";
         file_put_contents($extension->getPath() . "/composer.json", $json);
         \Drupal::messenger()->addStatus(t("The composer.json file has been created successful in path !path of module !name", ['!path' => $extension->getPath(), '!name' => $extension->getName()]));
       }
@@ -83,6 +91,7 @@ class ExtensionConfigForm extends ConfigFormBase {
     $extensions = $formState->getValue('extensions');
     $factory = \Drupal::service('authman.oauth');
     $authmanInstance = $factory->get('github');
+    $messages = [];
     foreach($extensions as $name => $extension) {
       if ($extension['select']) {
         $extension = $extensionList[$name];
@@ -96,11 +105,37 @@ class ExtensionConfigForm extends ConfigFormBase {
           ];
           $response = $authmanInstance->authenticatedRequest('POST', 'https://api.github.com/user/repos', ['body' => json_encode($repo)]);
           $repoJson = \json_decode((string)$response->getBody());
+          $messages[] = $repoJson->full_name;
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
           $errorJson = \json_decode((string)$e->getResponse()->getBody());
+          \Drupal::messenger()->addError($errorJson->message);
         }
       }
     }
+    \Drupal::messenger()->addStatus(t('%count repositories have been created successful. List: %list', ['%count' => count($messages), '%list' => implode(", ", $messages)]));
+  }
+
+  public function deleteRepository($form, FormStateInterface $formState) {
+    $config = \Drupal::config('package.settings');
+    $vendor = $config->get('vendor');
+    $extensionList = \Drupal::service('extension.list.module')->getList();
+    $extensions = $formState->getValue('extensions');
+    $factory = \Drupal::service('authman.oauth');
+    $authmanInstance = $factory->get('github');
+    $messages = [];
+    foreach($extensions as $name => $extension) {
+      if ($extension['select']) {
+        $extension = $extensionList[$name];
+        try {
+          $response = $authmanInstance->authenticatedRequest('DELETE', 'https://api.github.com/repos' . "/{$vendor}/{$extension->getName()}");
+          $messages[] = "/{$vendor}/{$extension->getName()}";
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+          $errorJson = \json_decode((string)$e->getResponse()->getBody());
+          \Drupal::messenger()->addError($errorJson->message);
+        }
+      }
+    }
+    \Drupal::messenger()->addStatus(t('%count repositories have been deleted successful. List: %list', ['%count' => count($messages), '%list' => implode(", ", $messages)]));
   }
 
   /**
