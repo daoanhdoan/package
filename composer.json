@@ -2,11 +2,14 @@
     "name" : "daoanhdoan/package",
     "description": "Code Package",
     "type" : "drupal-custom-module",
-    "license": "GPL-2.0",
+    "license": "GPL-2.0+",
     "extra": {
         "installer-name": "package"
     },
     "require": {
-        "drupal/authman_github": "*"
+        "drupal/authman_github": "*",
+        "drupal/authman": "*",
+        "drupal/system": "*",
+        "key/key": "*"
     }
 }

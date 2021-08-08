@@ -2,6 +2,7 @@
 namespace Drupal\package\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\Dependency;
 use Drupal\Core\Extension\Extension;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -116,7 +117,10 @@ class ExtensionConfigForm extends ConfigFormBase {
     $extensionList = \Drupal::service('extension.list.module')->getList();
     $extensions = $formState->getValue('extensions');
 
-
+    /**
+     * @var  $name
+     * @var Extension $extension
+     */
     foreach($extensions as $name => $extension) {
       if ($extension['select']) {
         $extension = $extensionList[$name];
@@ -125,10 +129,11 @@ class ExtensionConfigForm extends ConfigFormBase {
         $type = $extension->getType();
         $installer_name = $extension->getName();
         $require = [];
-        if (!empty($extension->info['dependencies'])) {
-          foreach ($extension->info['dependencies'] as $dependency) {
-            $dependency = str_replace(":", "/", $dependency);
-            $require[] = "\"{$dependency}\": \"*\"";
+        if (!empty($extension->requires)) {
+          /** @var Dependency $dependency */
+          foreach ($extension->requires as $dependency) {
+            $project = $dependency->getProject() ? $dependency->getProject() : "drupal";
+            $require[] = "\"{$project}/{$dependency->getName()}\": \"*\"";
           }
         }
         $require = implode(",\n        ", $require);
@@ -138,7 +143,7 @@ class ExtensionConfigForm extends ConfigFormBase {
     "name" : "{$package}",
     "description": "{$description}",
     "type" : "drupal-custom-{$type}",
-    "license": "GPL-2.0",
+    "license": "GPL-2.0+",
     "extra": {
         "installer-name": "{$installer_name}"
     },
