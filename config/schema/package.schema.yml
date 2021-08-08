@@ -4,9 +4,8 @@ package.settings:
     vendor:
       type: string
       label: 'Vendor'
-    instance_id:
-      type: sequence
-      label: 'Types'
-      sequence:
-        type: string
-        label: 'Types'
+    authman_instance_id:
+      type: string
+      label: 'Authman Instance ID'
+    repositories:
+      type: field.storage_settings.[%parent.type]

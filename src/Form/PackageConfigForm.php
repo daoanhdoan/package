@@ -47,14 +47,13 @@ class PackageConfigForm extends ConfigFormBase {
       ];
     }
     else {
-      $ids = $config->get('instance_id');
-      $form['instance_id'] = [
+      $ids = $config->get('authman_instance_id');
+      $form['authman_instance_id'] = [
         '#type' => 'select',
         '#title' => 'Github Authman Instance',
         '#options' => $options,
         '#default_value' => $ids,
-        '#required' => TRUE,
-        '#multiple' => TRUE
+        '#required' => TRUE
       ];
       $form['vendor'] = [
         '#type' => 'textfield',
@@ -79,9 +78,9 @@ class PackageConfigForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $authmanInstanceId = $form_state->getValue('instance_id');
+    $authmanInstanceId = $form_state->getValue('authman_instance_id');
     $config = $this->config('package.settings');
-    $config->set('instance_id', $authmanInstanceId);
+    $config->set('authman_instance_id', $authmanInstanceId);
     $config->set('vendor', $form_state->getValue('vendor'));
     $config->save();
     parent::submitForm($form, $form_state);
@@ -90,32 +89,29 @@ class PackageConfigForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getPackages(array &$form, FormStateInterface $form_state) {
-    $ids = $this->config("package.settings")->get('instance_id');
+  public static function getPackages(array &$form, FormStateInterface $form_state) {
+    $id = \Drupal::config("package.settings")->get('authman_instance_id');
     $repos = [];
     $factory = \Drupal::service('authman.oauth');
-    foreach($ids as $id) {
+    try {
+      $authmanInstance = $factory->get($id);
+      $token = $authmanInstance->getToken(true)->getAccessToken()->getToken();
       try {
-        $authmanInstance = $factory->get($id);
-        $token = $authmanInstance->getToken(true)->getAccessToken()->getToken();
-        try {
-          $response = $authmanInstance->authenticatedRequest('GET', 'https://api.github.com/user/repos');
-          $repoJson = \json_decode((string)$response->getBody());
-          if (!empty($repoJson)) {
-            foreach($repoJson as &$repo) {
-              $repo->config = ['config' => ['github-oauth' => ['github.com' => $token]]];
-            }
-            $repos = array_merge($repos, $repoJson);
+        $response = $authmanInstance->authenticatedRequest('GET', 'https://api.github.com/user/repos?per_page=1000');
+        $repos = \json_decode((string)$response->getBody());
+        if (!empty($repos)) {
+          foreach($repos as &$repo) {
+            $repo->config = ['config' => ['github-oauth' => ['github.com' => $token]]];
           }
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-          $errorJson = \json_decode((string)$e->getResponse()->getBody());
-          \Drupal::messenger()->addError($errorJson);
-          \Drupal::logger('package')->error($errorJson);
         }
+      } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+        $errorJson = \json_decode((string)$e->getResponse()->getBody());
+        \Drupal::messenger()->addError($errorJson);
+        \Drupal::logger('package')->error($errorJson);
       }
-      catch (\Exception $e) {
-        \Drupal::messenger()->addError($e->getMessage());
-      }
+    }
+    catch (\Exception $e) {
+      \Drupal::messenger()->addError($e->getMessage());
     }
 
     if (empty($repos)) {
