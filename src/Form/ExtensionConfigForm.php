@@ -121,7 +121,7 @@ class ExtensionConfigForm extends ConfigFormBase {
       if ($extension['select']) {
         $extension = $extensionList[$name];
         $package = "{$vendor}/{$extension->getName()}";
-        $description = $extension->info['name'] . !empty($extension->info['description']) ? " - {$extension->info['description']}":"";
+        $description = $extension->info['name'] . (!empty($extension->info['description']) ? " - {$extension->info['description']}":"");
         $type = $extension->getType();
         $installer_name = $extension->getName();
         $require = [];
