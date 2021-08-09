@@ -1,0 +1,49 @@
+<?php
+
+use Composer\Repository\Vcs\VcsDriverInterface;
+use Drupal\Component\Utility\NestedArray;
+use Drupal\package\Package;
+
+/**
+ * Implements of @see hook_rebuild()
+ */
+function package_rebuild() {
+  $id = \Drupal::config("package.settings")->get('authman_instance_id');
+  $packages = [];
+  $factory = \Drupal::service('authman.oauth');
+  try {
+    $authmanInstance = $factory->get($id);
+    $token = $authmanInstance->getToken(true)->getAccessToken()->getToken();
+    try {
+      $response = $authmanInstance->authenticatedRequest('GET', 'https://api.github.com/user/repos?per_page=1000');
+      $repos = \json_decode((string)$response->getBody());
+      $config = ['config' => ['github-oauth' => ['github.com' => $token]]];
+      if (!empty($repos)) {
+        foreach($repos as &$repo) {
+          $repository = Package::getVcsRepository($repo->git_url, $config);
+          /** @var VcsDriverInterface $driver */
+          $driver = $repository->getDriver();
+          $composerJson = $driver->getComposerInformation($driver->getRootIdentifier());
+          $package = $composerJson;
+          foreach($driver->getBranches() as $branch => $reference) {
+            $package['version'] = $branch;
+            $package['dist'] = (object)$driver->getDist($reference);
+            $package['source'] = (object)$driver->getSource($reference);
+            NestedArray::setValue($packages, [$composerJson['name'], $branch], (object)$package);
+          }
+        }
+        if (!empty($packages)) {
+          $cid = "package.github";
+          \Drupal::cache()
+            ->set($cid, $packages);
+        }
+      }
+    } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+      $errorJson = \json_decode((string)$e->getResponse()->getBody());
+      \Drupal::logger('package')->error($errorJson);
+    }
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('package')->error($e->getMessage());
+  }
+}
