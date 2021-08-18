@@ -13,9 +13,9 @@ class PackageController extends ControllerBase
 {
   public function load(Request $request)
   {
-    $data = \Drupal::cache()->get("package.github");
+    $data = \Drupal::config('package.settings')->set('repositories');
     if (!empty($data)) {
-      $packages = $data->data;
+      $packages = $data;
     }
     else {
       $packages = "No Repository found.";

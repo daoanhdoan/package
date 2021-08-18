@@ -168,9 +168,7 @@ class PackageConfigForm extends ConfigFormBase {
       $message = t('Finished with an error.');
     }
     if (!empty($results)) {
-      $cid = "package.github";
-      \Drupal::cache()
-        ->set($cid, $results);
+      \Drupal::configFactory()->getEditable('package.settings')->set('repositories', $results)->save();
     }
     $items = [];
     foreach ($results as $repoName => $repo) {

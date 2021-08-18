@@ -2,18 +2,19 @@
 
 use Composer\Repository\Vcs\VcsDriverInterface;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Url;
 use Drupal\package\Package;
 
 /**
  * Implements of @see hook_rebuild()
  */
-function package_rebuild() {
+function package_rebuild_off() {
   $id = \Drupal::config("package.settings")->get('authman_instance_id');
   $packages = [];
   $factory = \Drupal::service('authman.oauth');
   try {
     $authmanInstance = $factory->get($id);
-    $token = $authmanInstance->getToken(true)->getAccessToken()->getToken();
+    $token = $authmanInstance->getToken()->getAccessToken()->getToken();
     try {
       $response = $authmanInstance->authenticatedRequest('GET', 'https://api.github.com/user/repos?per_page=1000');
       $repos = \json_decode((string)$response->getBody());
@@ -46,4 +47,46 @@ function package_rebuild() {
   catch (\Exception $e) {
     \Drupal::logger('package')->error($e->getMessage());
   }
+}
+
+
+/**
+ * Implements hook_toolbar().
+ */
+function package_toolbar() {
+  // The 'Home' tab is a simple link, with no corresponding tray.
+  $items['package'] = [
+    '#type' => 'toolbar_item',
+    'tab' => [
+      '#type' => 'link',
+      '#title' => t('Package'),
+      '#url' => Url::fromRoute('package.extensions'),
+      '#attributes' => [
+        'title' => t('Return to site content'),
+        'class' => ['toolbar-icon', 'toolbar-icon-system-modules-list'],
+        'data-toolbar-escape-admin' => TRUE,
+      ],
+    ],
+    '#wrapper_attributes' => [
+      'class' => ['Package-toolbar-tab'],
+    ],
+    '#attached' => [
+      'library' => [
+        'toolbar/toolbar.escapeAdmin',
+      ],
+    ],
+    '#weight' => -20,
+  ];
+
+  // To conserve bandwidth, we only include the top-level links in the HTML.
+  // The subtrees are fetched through a JSONP script that is generated at the
+  // toolbar_subtrees route. We provide the JavaScript requesting that JSONP
+  // script here with the hash parameter that is needed for that route.
+  // @see toolbar_subtrees_jsonp()
+  list($hash, $hash_cacheability) = _toolbar_get_subtrees_hash();
+  $subtrees_attached['drupalSettings']['toolbar'] = [
+    'subtreesHash' => $hash,
+  ];
+
+  return $items;
 }

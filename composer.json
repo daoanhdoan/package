@@ -10,6 +10,7 @@
         "drupal/authman_github": "*",
         "drupal/authman": "*",
         "drupal/system": "*",
-        "key/key": "*"
+        "drupal/key": "*",
+        "composer/composer": "*"
     }
 }
